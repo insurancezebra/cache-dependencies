@@ -39,6 +39,7 @@ class CacheCollection(object):
     For correct transaction handling we should to return
     the same instance by cache alias.
     """
+
     def __init__(self):
         self.ctx = local()
 
@@ -55,13 +56,19 @@ class CacheCollection(object):
             if hasattr(django.core.cache, 'caches'):
                 cache = django.core.cache.caches[django_backend]
             else:
-                cache = django.core.cache.get_cache(django_backend, *args, **kwargs)
+                cache = django.core.cache.get_cache(
+                    django_backend, *args, **kwargs)
 
             def thread_safe_cache_accessor():
                 return self(backend, *args, **kwargs).cache
-            tags_lock = DependencyLock.make(isolation_level, thread_safe_cache_accessor, delay)
-            transaction = ThreadSafeTransactionManagerDecorator(TransactionManager(tags_lock))
-            relation_manager = ThreadSafeRelationManagerDecorator(RelationManager())
+            relation_manager = ThreadSafeRelationManagerDecorator(
+                RelationManager())
+            tags_lock = DependencyLock.make(
+                isolation_level, thread_safe_cache_accessor, delay)
+            transaction = TransactionManager(tags_lock)
+            # transaction = ThreadSafeTransactionManagerDecorator(TransactionManager(tags_lock))
+            relation_manager = RelationManager()
+            # relation_manager = ThreadSafeRelationManagerDecorator(RelationManager())
             self._caches[key] = CacheTagging(
                 cache, relation_manager, transaction
             )
@@ -79,6 +86,7 @@ class CacheCollection(object):
             self.ctx.caches = {}
         return self.ctx.caches
 
+
 caches = get_cache = CacheCollection()
 
 
@@ -89,6 +97,7 @@ class DefaultCacheProxy(object):
     This allows the legacy `cache` object to be thread-safe using the new
     ``caches`` API.
     """
+
     def __getattr__(self, name):
         return getattr(caches[DEFAULT_CACHE_ALIAS], name)
 
@@ -106,6 +115,7 @@ class DefaultCacheProxy(object):
 
     def __ne__(self, other):
         return caches[DEFAULT_CACHE_ALIAS] != other
+
 
 cache = DefaultCacheProxy()
 
@@ -132,6 +142,7 @@ class CacheRegistry(object):
     """
     Stores all registered caches
     """
+
     def __init__(self):
         """Constructor, initial registry."""
         self._registry = []
@@ -152,6 +163,7 @@ class CacheRegistry(object):
                 curry(_clear_cached, tags_func, apply_cache),
                 sender=Model, weak=False
             )
+
 
 registry = CacheRegistry()
 
@@ -175,5 +187,6 @@ def autodiscover():
 def close_caches(**kwargs):
     for cache in caches.all():
         cache.close()
+
 
 core_signals.request_finished.connect(close_caches)
