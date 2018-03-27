@@ -1,3 +1,10 @@
+This package throws errors whenever a thread attempts to access a cache resource created by another thread.
+I can't see a way to avoid that since one thread sets the cache item while threads created by multiple users will
+need to access the same cache item.
+The reason for this fork, therefore is to prevent these thread safe checks by removing the usage of the ThreadSafeRelationManagerDecorator and
+ThreadSafeTransactionManagerDecorator, using their non-threadsafe counterparts instead.
+
+
 ============================================
 Cache Dependencies (with support for Django)
 ============================================
